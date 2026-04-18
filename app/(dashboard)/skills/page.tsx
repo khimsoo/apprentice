@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { skills } from '@/lib/skills-data'
 import { Profile } from '@/types/database'
 import Link from 'next/link'
-import { Library, ArrowRight } from 'lucide-react'
+import { Library, ArrowRight, Settings } from 'lucide-react'
 
 export default async function SkillsPage() {
   const supabase = await createClient()
@@ -15,9 +15,24 @@ export default async function SkillsPage() {
   const { data: profile } = await supabase
     .from('profiles').select('*').eq('id', user.id).single()
 
+  const isMentor = profile?.role === 'mentor'
+
   return (
     <>
-      <Header title="Skills Library" profile={profile as Profile} />
+      <Header
+        title="Skills Library"
+        profile={profile as Profile}
+        action={
+          isMentor ? (
+            <Link href="/skills/manage">
+              <button className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <Settings className="w-4 h-4" />
+                Manage Links
+              </button>
+            </Link>
+          ) : undefined
+        }
+      />
       <main className="flex-1 px-8 py-8">
         <div className="mb-8">
           <p className="text-gray-500 text-sm max-w-xl">

@@ -3,9 +3,10 @@ import { redirect, notFound } from 'next/navigation'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
 import { getSkillBySlug, Difficulty, ResourceType } from '@/lib/skills-data'
+import { getRemovedLinks } from '@/app/actions/skills'
 import { Profile } from '@/types/database'
 import Link from 'next/link'
-import { ExternalLink, AlertTriangle, ChevronLeft } from 'lucide-react'
+import { ExternalLink, AlertTriangle, ChevronLeft, Settings } from 'lucide-react'
 
 const difficultyConfig: Record<Difficulty, { label: string; dot: string; badge: string }> = {
   beginner: { label: 'Beginner', dot: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200' },
@@ -46,18 +47,32 @@ export default async function SkillDetailPage({
   const skill = getSkillBySlug(slug)
   if (!skill) notFound()
 
+  const isMentor = profile?.role === 'mentor'
+  const removedSet = new Set(await getRemovedLinks())
+
   return (
     <>
       <Header title={skill.title} profile={profile as Profile} />
       <main className="flex-1 px-8 py-8 max-w-5xl">
-        {/* Back link */}
-        <Link
-          href="/skills"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-6 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Skills Library
-        </Link>
+        {/* Back link + manage */}
+        <div className="flex items-center justify-between mb-6">
+          <Link
+            href="/skills"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Skills Library
+          </Link>
+          {isMentor && (
+            <Link
+              href="/skills/manage"
+              className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              Manage Links
+            </Link>
+          )}
+        </div>
 
         {/* Description */}
         <p className="text-gray-500 text-sm mb-10 max-w-2xl">{skill.description}</p>
@@ -121,7 +136,7 @@ export default async function SkillDetailPage({
                                         <span className="text-xs text-gray-400 italic">{resource.note}</span>
                                       )}
                                     </div>
-                                    {resource.url ? (
+                                    {resource.url && !removedSet.has(resource.url) ? (
                                       <a
                                         href={resource.url}
                                         target="_blank"

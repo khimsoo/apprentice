@@ -235,3 +235,24 @@ export const skills: Skill[] = [productManagement]
 export function getSkillBySlug(slug: string): Skill | undefined {
   return skills.find((s) => s.slug === slug)
 }
+
+export interface LinkedResource {
+  skillTitle: string
+  skillSlug: string
+  categoryTitle: string
+  resource: Resource
+}
+
+export function getAllLinkedResources(): LinkedResource[] {
+  const result: LinkedResource[] = []
+  for (const skill of skills) {
+    for (const cat of skill.categories) {
+      for (const res of cat.resources) {
+        if (res.url) {
+          result.push({ skillTitle: skill.title, skillSlug: skill.slug, categoryTitle: cat.title, resource: res })
+        }
+      }
+    }
+  }
+  return result
+}
