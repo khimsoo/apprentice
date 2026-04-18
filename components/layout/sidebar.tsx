@@ -11,6 +11,7 @@ import {
   LogOut,
   GraduationCap,
   ChevronRight,
+  Library,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: '/programs', label: 'Programs', icon: <BookOpen className="w-5 h-5" /> },
   { href: '/tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> },
+  { href: '/skills', label: 'Skills Library', icon: <Library className="w-5 h-5" /> },
   { href: '/profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
 ]
 
