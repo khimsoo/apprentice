@@ -8,12 +8,13 @@ import { formatDate, getStatusColor, getPriorityColor, daysUntil } from '@/lib/u
 import Link from 'next/link'
 import {
   BookOpen, Users, Calendar, CheckSquare, Clock,
-  ArrowLeft, Target, AlertCircle
+  ArrowLeft, Target, AlertCircle, ClipboardList, Mail
 } from 'lucide-react'
 import { Profile } from '@/types/database'
 import { EnrollButton } from './enroll-button'
 import { NewTaskModal } from './new-task-modal'
 import { NewMilestoneModal } from './new-milestone-modal'
+import { ApplicantActions } from './applicant-actions'
 import { Button } from '@/components/ui/button'
 
 export default async function ProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -59,9 +60,12 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
 
   const { data: enrollments } = await supabase
     .from('enrollments')
-    .select('id, status, enrolled_at, profiles!apprentice_id(id, full_name, avatar_url, email)')
+    .select('id, status, enrolled_at, profiles!apprentice_id(id, full_name, avatar_url, email, bio)')
     .eq('program_id', id)
     .order('enrolled_at', { ascending: false })
+
+  const pendingEnrollments = ((enrollments || []) as any[]).filter((e) => e.status === 'pending')
+  const activeEnrollments = ((enrollments || []) as any[]).filter((e) => e.status !== 'pending')
 
   const myTasks = ((tasks || []) as any[]).map((t) => {
     const mySubmission = t.task_submissions?.find((s: any) => s.apprentice_id === user.id)
@@ -235,26 +239,82 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
             </Card>
           </div>
 
-          {/* Right: Apprentices */}
-          <div>
+          {/* Right: Pending Applications + Apprentices */}
+          <div className="space-y-6">
+            {/* Pending Applications — owner only */}
+            {isOwner && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-amber-500" />
+                    <h2 className="font-semibold text-gray-900">Pending Applications</h2>
+                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${pendingEnrollments.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'}`}>
+                      {pendingEnrollments.length}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {pendingEnrollments.length === 0 ? (
+                    <div className="px-6 py-8 text-center text-sm text-gray-400">
+                      No pending applications.
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-gray-100">
+                      {pendingEnrollments.map((e: any) => {
+                        const ap = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles
+                        return (
+                          <li key={e.id} className="px-6 py-4 space-y-3">
+                            <div className="flex items-start gap-3">
+                              <Avatar name={ap?.full_name} src={ap?.avatar_url} size="sm" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {ap?.full_name ?? 'Applicant'}
+                                </p>
+                                {ap?.email && (
+                                  <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate">
+                                    <Mail className="w-3 h-3 flex-shrink-0" />
+                                    {ap.email}
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  Applied {formatDate(e.enrolled_at)}
+                                </p>
+                              </div>
+                            </div>
+                            {ap?.bio && (
+                              <p className="text-xs text-gray-500 leading-relaxed line-clamp-3 bg-gray-50 rounded-lg px-3 py-2">
+                                {ap.bio}
+                              </p>
+                            )}
+                            <ApplicantActions enrollmentId={e.id} programId={id} />
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Active Apprentices */}
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-indigo-600" />
                   <h2 className="font-semibold text-gray-900">Apprentices</h2>
                   <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
-                    {enrollments?.length ?? 0}
+                    {activeEnrollments.length}
                   </span>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                {!enrollments || enrollments.length === 0 ? (
+                {activeEnrollments.length === 0 ? (
                   <div className="px-6 py-8 text-center text-sm text-gray-400">
                     No apprentices enrolled yet.
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-50">
-                    {((enrollments || []) as any[]).map((e) => {
+                    {activeEnrollments.map((e: any) => {
                       const ap = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles
                       return (
                         <li key={e.id} className="flex items-center gap-3 px-6 py-3.5">
