@@ -60,26 +60,33 @@ export default async function TasksPage() {
     const programIds = ((enrollments || []) as any[]).map((e) => e.program_id)
 
     if (programIds.length > 0) {
-      const { data } = await supabase
+      const { data: taskData } = await supabase
         .from('tasks')
-        .select('id, title, description, due_date, priority, programs(id, title), milestones(title), task_submissions(id, status, content, feedback, apprentice_id)')
+        .select('id, title, description, due_date, priority, programs(id, title), milestones(title)')
         .in('program_id', programIds)
         .order('due_date', { ascending: true, nullsFirst: false })
 
-      tasks = ((data || []) as any[]).map((t) => {
-        const subs: any[] = Array.isArray(t.task_submissions) ? t.task_submissions : []
-        const mine = subs.find((s) => s.apprentice_id === user.id)
-        return {
-          id: t.id,
-          title: t.title,
-          description: t.description,
-          due_date: t.due_date,
-          priority: t.priority,
-          programs: Array.isArray(t.programs) ? t.programs[0] ?? null : t.programs,
-          milestones: Array.isArray(t.milestones) ? t.milestones[0] ?? null : t.milestones,
-          mySubmission: mine ? { id: mine.id, status: mine.status, content: mine.content, feedback: mine.feedback } : null,
-        }
-      })
+      const taskIds = ((taskData || []) as any[]).map((t) => t.id)
+
+      const { data: subData } = await supabase
+        .from('task_submissions')
+        .select('id, task_id, status, content, feedback')
+        .eq('apprentice_id', user.id)
+        .in('task_id', taskIds)
+
+      const subMap: Record<string, { id: string; status: string; content: string | null; feedback: string | null }> =
+        Object.fromEntries(((subData || []) as any[]).map((s) => [s.task_id, { id: s.id, status: s.status, content: s.content, feedback: s.feedback }]))
+
+      tasks = ((taskData || []) as any[]).map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        due_date: t.due_date,
+        priority: t.priority,
+        programs: Array.isArray(t.programs) ? t.programs[0] ?? null : t.programs,
+        milestones: Array.isArray(t.milestones) ? t.milestones[0] ?? null : t.milestones,
+        mySubmission: subMap[t.id] ?? null,
+      }))
     }
   }
 

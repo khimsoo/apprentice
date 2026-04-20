@@ -23,6 +23,17 @@ export function ProfileForm({ profile }: { profile: Profile }) {
     setLoading(true)
     setError(null)
 
+    if (fullName.trim().length > 0 && fullName.trim().length > 255) {
+      setError('Name is too long (max 255 characters).')
+      setLoading(false)
+      return
+    }
+    if (bio.length > 1000) {
+      setError('Bio is too long (max 1000 characters).')
+      setLoading(false)
+      return
+    }
+
     const { error: err } = await supabase
       .from('profiles')
       .update({ full_name: fullName, bio })
@@ -47,6 +58,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
         placeholder="Your full name"
+        maxLength={255}
       />
       <Input
         label="Email address"
@@ -60,6 +72,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         onChange={(e) => setBio(e.target.value)}
         placeholder="Tell others about yourself, your background, and what you're working on..."
         rows={4}
+        maxLength={1000}
       />
       {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600">

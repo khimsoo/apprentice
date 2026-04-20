@@ -1,3 +1,5 @@
+import { rateLimit } from '@/lib/rate-limit'
+
 // Block requests to private/internal IP ranges to prevent SSRF
 function isPrivateHostname(hostname: string): boolean {
   const lower = hostname.toLowerCase()
@@ -18,6 +20,11 @@ function isPrivateHostname(hostname: string): boolean {
 }
 
 export async function GET(request: Request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  if (!rateLimit(ip, 10, 60_000)) {
+    return Response.json({ ok: false, error: 'rate_limited' }, { status: 429 })
+  }
+
   const { searchParams } = new URL(request.url)
   const url = searchParams.get('url')
 
