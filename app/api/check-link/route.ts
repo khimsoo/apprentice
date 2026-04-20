@@ -1,3 +1,22 @@
+// Block requests to private/internal IP ranges to prevent SSRF
+function isPrivateHostname(hostname: string): boolean {
+  const lower = hostname.toLowerCase()
+  const privatePatterns = [
+    /^localhost$/i,
+    /^127\./,
+    /^10\./,
+    /^172\.(1[6-9]|2[0-9]|3[01])\./,
+    /^192\.168\./,
+    /^169\.254\./,
+    /^\[::1\]$/,
+    /^\[fc[0-9a-f]{2}:/i,
+    /^\[fe[89ab][0-9a-f]:/i,
+    /^0\./,
+    /^::1$/,
+  ]
+  return privatePatterns.some((re) => re.test(lower))
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const url = searchParams.get('url')
@@ -15,6 +34,10 @@ export async function GET(request: Request) {
 
   if (!['http:', 'https:'].includes(parsed.protocol)) {
     return Response.json({ ok: false, error: 'invalid_protocol' })
+  }
+
+  if (isPrivateHostname(parsed.hostname)) {
+    return Response.json({ ok: false, error: 'invalid_url' })
   }
 
   const controller = new AbortController()

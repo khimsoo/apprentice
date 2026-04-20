@@ -25,7 +25,10 @@ export async function removeLinks(urls: string[]): Promise<{ error?: string }> {
     .from('removed_skill_links')
     .upsert(rows, { onConflict: 'url' })
 
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('removeLinks error:', error.code)
+    return { error: 'Failed to remove links. Please try again.' }
+  }
 
   revalidatePath('/skills', 'layout')
   return {}
@@ -45,7 +48,10 @@ export async function restoreLink(url: string): Promise<{ error?: string }> {
     .delete()
     .eq('url', url)
 
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('restoreLink error:', error.code)
+    return { error: 'Failed to restore link. Please try again.' }
+  }
 
   revalidatePath('/skills', 'layout')
   return {}

@@ -25,6 +25,24 @@ export default function SignupPage() {
     setLoading(true)
     setError(null)
 
+    if (fullName.trim().length < 2 || fullName.trim().length > 255) {
+      setError('Full name must be between 2 and 255 characters.')
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      setLoading(false)
+      return
+    }
+
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError('Password must contain at least one uppercase letter and one number.')
+      setLoading(false)
+      return
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -106,7 +124,7 @@ export default function SignupPage() {
             placeholder="••••••••"
             required
             autoComplete="new-password"
-            hint="Must be at least 6 characters"
+            hint="Min 8 characters with at least one uppercase letter and one number"
           />
 
           {error && (
